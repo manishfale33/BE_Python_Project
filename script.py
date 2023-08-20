@@ -4,6 +4,11 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import time
 import threading
+import openai
+import pyautogui  # Import the pyautogui library for file uploads
+
+# Set up your OpenAI API key
+openai.api_key = 'YOUR_API_KEY'  # Replace with your actual API key
 
 # Path to Chrome WebDriver executable
 webdriver_path = 'chromedriver.exe'
@@ -24,10 +29,25 @@ def load_numbers():
             for number in numbers:
                 recipients_text.insert(tk.END, number + '\n')
 
+# Function to generate a message using AI
+def generate_message(recipient_name):
+    prompt = f"Generate a message for {recipient_name}: "
+    response = openai.Completion.create(
+        engine="text-davinci-002",
+        prompt=prompt,
+        max_tokens=50,  # Adjust the max length of the generated message
+        n=1,  # Number of completions to generate
+        stop=None,  # You can set stop words if needed
+        temperature=0.7  # Adjust the temperature for randomness
+    )
+    message = response.choices[0].text.strip()
+    return message
+
 # Function to send messages
 def send_messages():
     recipient_names = recipients_text.get("1.0", "end-1c").split('\n')
-    message_text = message_entry.get("1.0", "end-1c")
+    manual_message = message_entry.get("1.0", "end-1c")
+    attachment_path = attachment_entry.get("1.0", "end-1c").strip()
 
     driver.get('https://web.whatsapp.com/')
     input("Scan the QR code and press Enter after logging in...")
@@ -41,11 +61,26 @@ def send_messages():
 
             time.sleep(2)
 
+            # Check if a manual message is provided, if not, generate an AI message
+            if manual_message.strip():
+                message_text = manual_message
+            else:
+                # Generate a message using AI
+                message_text = generate_message(recipient_name)
+
             message_input = driver.find_element_by_xpath('//div[contains(@class, "copyable-text")]')
             message_input.send_keys(message_text)
+
+            if attachment_path:
+                # Attach the file using pyautogui
+                message_input.click()
+                time.sleep(2)
+                pyautogui.write(attachment_path)
+                time.sleep(1)
+                pyautogui.press('enter')
+
             message_input.send_keys(Keys.ENTER)
             time.sleep(1)
-
 # Create the main window
 root = tk.Tk()
 root.title("WhatsApp Blaster")
@@ -65,6 +100,16 @@ message_label = tk.Label(root, text="Message:")
 message_label.pack()
 message_entry = tk.Text(root, height=5, width=40)
 message_entry.pack()
+
+# Attachment Entry
+attachment_label = tk.Label(root, text="Attachment (optional):")
+attachment_label.pack()
+attachment_entry = tk.Text(root, height=1, width=40)
+attachment_entry.pack()
+
+# Attach File Button
+attach_button = tk.Button(root, text="Attach File", command=lambda: filedialog.askopenfilename())
+attach_button.pack()
 
 # Send Messages Button
 send_button = tk.Button(root, text="Send Messages", command=lambda: threading.Thread(target=send_messages).start())
