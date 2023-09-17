@@ -2,24 +2,22 @@ import tkinter as tk
 from tkinter import ttk
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.keys import Keys
 
-def send_facebook_messages():
+def send_facebook_message_with_attachment():
     username = username_entry.get()
     password = password_entry.get()
     recipient = recipient_entry.get()
     message_text = message_entry.get("1.0", tk.END)
+    attachment_path = attachment_entry.get()
 
-    # Set up the Chrome WebDriver
     driver = webdriver.Chrome()
 
     try:
-        # Open Facebook login page
         driver.get("https://www.facebook.com")
 
-        # Find and interact with the email/phone and password fields
         email_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "email")))
         email_field.send_keys(username)
 
@@ -29,24 +27,41 @@ def send_facebook_messages():
         login_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "login")))
         login_button.click()
 
-        # Wait for login to complete
-        WebDriverWait(driver, 20).until(EC.url_contains("https://www.facebook.com/"))
+        WebDriverWait(driver, 50).until(EC.url_contains("https://www.facebook.com/"))
 
-        # Check if the login page reopens
         if "login" in driver.current_url:
             print("Login failed. Please check your credentials.")
             return
 
-        # Go to the recipient's profile (replace with the recipient's profile URL)
-        driver.get(f"https://www.facebook.com/{recipient}")
+        # Search for the recipient by name
+        search_box = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']")))
+        search_box.send_keys(recipient)
+        search_box.send_keys(Keys.RETURN)
 
-        # Click on the message button (if it doesn't work, you may need to adjust this)
-        message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-testid='chat_sidebar']")))
+        # Handle any popups (if they appear)
+        try:
+            popup = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
+            # You can add code here to close the popup (e.g., by clicking the cancel icon)
+            cancel_icon = WebDriverWait(popup, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']//div[@aria-label='Cancel']")))
+            cancel_icon.click()
+        except Exception as e:
+            # Handle the case when no popup is present
+            pass
+
+        # Click on the message button
+        message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[contains(@aria-label, 'Message')]")))
         message_button.click()
 
-        # Enter the message and send
+        # Enter the message
         message_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[contenteditable='true']")))
         message_input.send_keys(message_text)
+
+        # Attach a file if specified
+        if attachment_path:
+            attachment_input = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.XPATH, "//input[@type='file']")))
+            attachment_input.send_keys(attachment_path)
+
+        # Send the message
         message_input.send_keys(Keys.RETURN)
 
         print("Message sent successfully")
@@ -55,44 +70,40 @@ def send_facebook_messages():
         print(f"An error occurred: {str(e)}")
 
     finally:
-        # Close the browser
         driver.quit()
 
-# Create the main window
 root = tk.Tk()
 root.title("Facebook Message Sender")
 
-# Facebook Tab
 facebook_tab = ttk.Frame(root)
 facebook_tab.pack()
 
-# Username Entry
 username_label = tk.Label(facebook_tab, text="Facebook Email/Phone:")
 username_label.pack()
 username_entry = tk.Entry(facebook_tab)
 username_entry.pack()
 
-# Password Entry
 password_label = tk.Label(facebook_tab, text="Facebook Password:")
 password_label.pack()
 password_entry = tk.Entry(facebook_tab, show='*')
 password_entry.pack()
 
-# Recipient Entry
-recipient_label = tk.Label(facebook_tab, text="Recipient's Facebook Profile (Username or ID):")
+recipient_label = tk.Label(facebook_tab, text="Recipient's Facebook Name:")
 recipient_label.pack()
 recipient_entry = tk.Entry(facebook_tab)
 recipient_entry.pack()
 
-# Message Entry
 message_label = tk.Label(facebook_tab, text="Message:")
 message_label.pack()
 message_entry = tk.Text(facebook_tab, height=5, width=40)
 message_entry.pack()
 
-# Send Facebook Message Button
-send_button = tk.Button(facebook_tab, text="Send Facebook Message", command=send_facebook_messages)
+attachment_label = tk.Label(facebook_tab, text="Attachment Path (optional):")
+attachment_label.pack()
+attachment_entry = tk.Entry(facebook_tab)
+attachment_entry.pack()
+
+send_button = tk.Button(facebook_tab, text="Send Facebook Message with Attachment", command=send_facebook_message_with_attachment)
 send_button.pack()
 
-# Start the GUI event loop
 root.mainloop()

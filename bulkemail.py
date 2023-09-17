@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 def send_email():
@@ -18,18 +19,18 @@ def send_email():
         driver.get("https://mail.google.com")
 
         # Find and interact with the email and password fields
-        email_field = driver.find_element_by_id("identifierId")
+        email_field = driver.find_element(By.ID,"identifierId")
         email_field.send_keys(sender_email)
         email_field.send_keys(Keys.RETURN)
 
         # Wait for the password field to appear
         driver.implicitly_wait(10)
-        password_field = driver.find_element_by_name("password")
+        password_field = driver.find_element(By.NAME,"password")
         password_field.send_keys(sender_password)
         password_field.send_keys(Keys.RETURN)
 
         # Compose an email
-        compose_button = driver.find_element_by_css_selector("div[role='button'][gh='cm']")
+        compose_button = driver.find_element(By.CSS_SELECTOR,"div[role='button'][gh='cm']")
         compose_button.click()
         driver.implicitly_wait(5)
 
@@ -37,14 +38,14 @@ def send_email():
         to_field.send_keys(", ".join(recipients))
         to_field.send_keys(Keys.RETURN)
 
-        subject_field = driver.find_element_by_name("subjectbox")
+        subject_field = driver.find_element(By.NAME,"subjectbox")
         subject_field.send_keys(subject)
 
-        message_field = driver.find_element_by_css_selector("div[role='textbox']")
+        message_field = driver.find_element(By.CSS_SELECTOR,"div[role='textbox']")
         message_field.send_keys(message_text)
 
         # Send the email
-        send_button = driver.find_element_by_css_selector("div[aria-label='Send ‪(Ctrl-Enter)‬']")
+        send_button = driver.find_element(By.CSS_SELECTOR,"div[aria-label='Send ‪(Ctrl-Enter)‬']")
         send_button.click()
 
         print("Email sent successfully")
