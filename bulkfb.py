@@ -38,15 +38,8 @@ def send_facebook_message_with_attachment():
         search_box.send_keys(recipient)
         search_box.send_keys(Keys.RETURN)
 
-        # Handle any popups (if they appear)
-        try:
-            popup = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
-            # You can add code here to close the popup (e.g., by clicking the cancel icon)
-            cancel_icon = WebDriverWait(popup, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']//div[@aria-label='Cancel']")))
-            cancel_icon.click()
-        except Exception as e:
-            # Handle the case when no popup is present
-            pass
+        # Handle site notifications (if they appear)
+        handle_notifications(driver)
 
         # Click on the message button
         message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[contains(@aria-label, 'Message')]")))
@@ -71,6 +64,20 @@ def send_facebook_message_with_attachment():
 
     finally:
         driver.quit()
+
+def handle_notifications(driver):
+    try:
+        # Wait for the notification dialog to appear
+        notification_dialog = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
+        
+        # You can add code here to block or dismiss the notification
+        # For example, clicking the "Block" button
+        block_button = WebDriverWait(notification_dialog, 5).until(EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Block')]")))
+        block_button.click()
+        
+    except Exception as e:
+        # Handle the case when no notification dialog is present
+        pass
 
 root = tk.Tk()
 root.title("Facebook Message Sender")

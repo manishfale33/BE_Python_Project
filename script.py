@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
 import threading
@@ -64,7 +65,7 @@ def send_messages():
 
     for recipient_name in recipient_names:
         if recipient_name:
-            search_bar = driver.find_element_by_xpath('//*[@id="side"]/div[1]/div/div/div[2]/div/div[1]/p')
+            search_bar = driver.find_element(By.XPATH,'//*[@id="side"]/div[1]/div/div/div[2]/div/div[1]/p')
             search_bar.click()
             search_bar.send_keys(recipient_name)
             search_bar.send_keys(Keys.ENTER)
@@ -78,7 +79,7 @@ def send_messages():
                 # Generate a message using AI
                 message_text = generate_message(recipient_name)
 
-            message_input = driver.find_element_by_xpath('//*[@id="main"]/footer/div[1]/div/span[2]/div/div[2]/div[1]/div')
+            message_input = driver.find_element(By.XPATH,'//*[@id="main"]/footer/div[1]/div/span[2]/div/div[2]/div[1]/div')
             message_input.send_keys(message_text)
 
             if attachment_path:
