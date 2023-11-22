@@ -1,84 +1,112 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import filedialog
+from tkinter import simpledialog
+from tkinter import ttk
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoSuchElementException
-import pandas as pd
-import time
+import openpyxl
+import csv
+import random
 
-# Function to send bulk messages
-def send_bulk_messages():
-    # Load the chrome driver
-    driver = webdriver.Chrome()
-    count = 0
+# Function to send a message using Selenium WebDriver
+def send_message(driver, phone_number, message):
+    driver.get("https://web.whatsapp.com")
+    input("Scan the QR code and press Enter after logging in.")
+    
+    driver.get(f"https://web.whatsapp.com/send?phone={phone_number}")
+    message_box = driver.find_element_by_xpath('//div[@contenteditable="true"][@data-tab="1"]')
+    message_box.send_keys(message)
+    message_box.send_keys(Keys.ENTER)
 
-    # Open WhatsApp URL in chrome browser
-    driver.get("https://web.whatsapp.com/")
-    wait = WebDriverWait(driver, 20)
+# Function to generate a random message
+def generate_random_message():
+    messages = ["Hello!", "How are you?", "Good morning!", "Happy to connect!"]
+    return random.choice(messages)
 
-    # Get input values from the user
-    excel_file_path = excel_path_entry.get()
-    contact_message = message_entry.get()
+# Function to handle button click
+def send_message_button():
+    selected_item = phone_tree.selection()
+    message = message_entry.get()
+    if not message:
+        message = generate_random_message()
+    
+    if selected_item:
+        item = phone_tree.item(selected_item)
+        phone_number = item['values'][1]
+        send_message(driver, phone_number, message)
 
-    try:
-        excel_data = pd.read_excel(excel_file_path, sheet_name='Customers')
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to read Excel file: {str(e)}")
-        driver.quit()
-        return
+# Function to fetch phone numbers and contact names from CSV
+def fetch_phone_contacts_from_csv(file_path):
+    phone_contacts = []
+    with open(file_path, 'r') as csv_file:
+        reader = csv.reader(csv_file)
+        for row in reader:
+            if row:
+                if len(row) == 2:
+                    phone_contacts.append([row[0], row[1]])
+                elif len(row) == 1:
+                    phone_contacts.append(["", row[0]])
+    return phone_contacts
 
-    # Iterate through Excel rows
-    for column in excel_data['Name'].tolist():
-        # Assign customized message
-        message = contact_message.replace('{customer_name}', column)
+# Function to fetch phone numbers and contact names from Excel
+def fetch_phone_contacts_from_excel(file_path):
+    phone_contacts = []
+    wb = openpyxl.load_workbook(file_path)
+    sheet = wb.active
+    for row in sheet.iter_rows(values_only=True):
+        if row:
+            if len(row) == 2:
+                phone_contacts.append([row[0], row[1]])
+            elif len(row) == 1:
+                phone_contacts.append(["", str(row[0])])
+    return phone_contacts
 
-        # Locate search box through x_path
-        search_box = '//*[@id="side"]/div[1]/div/label/div/div[2]'
-        person_title = wait.until(lambda driver: driver.find_element_by_xpath(search_box))
+# Function to handle file selection and phone number fetching
+def select_file_and_fetch_numbers():
+    file_path = filedialog.askopenfilename()
+    phone_tree.delete(*phone_tree.get_children())
+    
+    if file_path.endswith('.csv'):
+        phone_contacts = fetch_phone_contacts_from_csv(file_path)
+    elif file_path.endswith(('.xlsx', '.xls')):
+        phone_contacts = fetch_phone_contacts_from_excel(file_path)
+    
+    for contact in phone_contacts:
+        phone_tree.insert('', 'end', values=contact)
 
-        # Clear search box if any contact number is written in it
-        person_title.clear()
+# Create a Tkinter window
+window = tk.Tk()
+window.title("WhatsApp Auto Sender")
 
-        # Send contact number in search box
-        person_title.send_keys(str(excel_data['Contact'][count]))
-        count = count + 1
+# Create a custom ttk style for the black and white theme
+custom_style = ttk.Style()
+custom_style.configure("Custom.TButton", foreground="white", background="black")
+custom_style.configure("Custom.TEntry", foreground="black", background="white")
+custom_style.configure("Custom.TLabel", foreground="black", background="white")
+custom_style.configure("Custom.Treeview", foreground="black", background="white")
 
-        # Wait for 2 seconds to search contact number
-        time.sleep(2)
+# Create and place GUI elements using the custom style
+message_label = ttk.Label(window, text="Message (leave blank for random):", style="Custom.TLabel")
+message_label.pack()
+message_entry = ttk.Entry(window, style="Custom.TEntry")
+message_entry.pack()
 
-        try:
-            # Load error message in case of unavailability of contact number
-            element = driver.find_element_by_xpath('//*[@id="pane-side"]/div[1]/div/span')
-        except NoSuchElementException:
-            person_title.send_keys(Keys.ENTER)
-            actions = ActionChains(driver)
-            actions.send_keys(message)
-            actions.send_keys(Keys.ENTER)
-            actions.perform()
+select_file_button = ttk.Button(window, text="Select CSV/Excel File", command=select_file_and_fetch_numbers, style="Custom.TButton")
+select_file_button.pack()
 
-    # Close chrome browser
-    driver.quit()
+phone_tree = ttk.Treeview(window, columns=("Name", "Phone"), style="Custom.Treeview")
+phone_tree.heading("#1", text="Name")
+phone_tree.heading("#2", text="Phone")
+phone_tree.pack()
 
-# Create the main window
-root = tk.Tk()
-root.title("WhatsApp Bulk Messenger")
+send_button = ttk.Button(window, text="Send Message", command=send_message_button, style="Custom.TButton")
+send_button.pack()
 
-# Create and place entry fields and labels for user input
-excel_path_label = tk.Label(root, text="Excel File Path:")
-excel_path_label.pack(pady=5)
-excel_path_entry = tk.Entry(root)
-excel_path_entry.pack(pady=5)
+# Initialize the WebDriver
+driver = webdriver.Chrome()
 
-message_label = tk.Label(root, text="Customized Message (Use '{customer_name}' to insert customer names):")
-message_label.pack(pady=5)
-message_entry = tk.Entry(root)
-message_entry.pack(pady=5)
+# Start the Tkinter main loop
+window.mainloop()
 
-# Create and place a button to send bulk messages
-send_button = tk.Button(root, text="Send Bulk Messages", command=send_bulk_messages)
-send_button.pack(pady=10)
-
-# Run the Tkinter main event loop
-root.mainloop()
+# Close the WebDriver when the GUI is closed
+driver.quit()

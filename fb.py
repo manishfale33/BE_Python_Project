@@ -1,5 +1,6 @@
 import sys
 from tkinter import *
+from tkinter import ttk  # Import the ttk module for themed widgets
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -12,50 +13,62 @@ class FacebookMessageSender:
         self.root = root
         root.title("Facebook Message Sender")
 
-        # Apply your custom theme to the root window
-        root.tk_setPalette(background="#FFFFFF", foreground="#000000")
-        root.option_add("*TButton*highlightColor", "red")  # Customize button highlight color
+        # Apply your custom black and blue theme
+        root.tk_setPalette(background="#000000", foreground="#00A0E6")  # Black background, blue foreground
+        root.option_add("*TButton*highlightColor", "blue")  # Customize button highlight color
 
-        self.username_label = Label(root, text="Facebook Email/Phone:")
+        # Define custom colors
+        dark_background = "#000000"
+        text_color = "#00A0E6"
+
+        self.username_label = Label(root, text="Facebook Email/Phone:", fg=text_color, bg=dark_background)
         self.username_label.grid(row=0, column=0, sticky=W)
-        self.username_entry = Entry(root)
+        self.username_entry = ttk.Entry(root, style="Custom.TEntry")  # Use themed entry widget
         self.username_entry.grid(row=0, column=1, sticky=W)
 
-        self.password_label = Label(root, text="Facebook Password:")
+        self.password_label = Label(root, text="Facebook Password:", fg=text_color, bg=dark_background)
         self.password_label.grid(row=1, column=0, sticky=W)
-        self.password_entry = Entry(root, show="*")
+        self.password_entry = ttk.Entry(root, show="*", style="Custom.TEntry")  # Use themed entry widget
         self.password_entry.grid(row=1, column=1, sticky=W)
 
-        self.recipient_label = Label(root, text="Recipient's Facebook Name:")
+        self.recipient_label = Label(root, text="Recipient's Facebook Name:", fg=text_color, bg=dark_background)
         self.recipient_label.grid(row=2, column=0, sticky=W)
-        self.recipient_entry = Entry(root)
+        self.recipient_entry = ttk.Entry(root, style="Custom.TEntry")  # Use themed entry widget
         self.recipient_entry.grid(row=2, column=1, sticky=W)
 
-        self.message_label = Label(root, text="Message:")
+        self.message_label = Label(root, text="Message:", fg=text_color, bg=dark_background)
         self.message_label.grid(row=3, column=0, sticky=W)
-        self.message_entry = Text(root, height=5, width=40)
+        self.message_entry = Text(root, height=5, width=40, bg=dark_background, fg=text_color)
         self.message_entry.grid(row=3, column=1, columnspan=2, sticky=W)
 
-        self.attachment_label = Label(root, text="Attachment Path (optional):")
+        self.attachment_label = Label(root, text="Attachment Path (optional):", fg=text_color, bg=dark_background)
         self.attachment_label.grid(row=4, column=0, sticky=W)
-        self.attachment_entry = Entry(root)
+        self.attachment_entry = ttk.Entry(root, style="Custom.TEntry")  # Use themed entry widget
         self.attachment_entry.grid(row=4, column=1, sticky=W)
 
-        self.attach_label = Label(root, text="Attachment:")
+        self.attach_label = Label(root, text="Attachment:", fg=text_color, bg=dark_background)
         self.attach_label.grid(row=5, column=0, sticky=W)
 
         self.attachment_button = PhotoImage(file="Images/search.png").subsample(10)  # Resized image
-        self.browse_button = Button(root, image=self.attachment_button, command=self.browse_for_attachment, borderwidth=0)
+        self.browse_button = Button(root, image=self.attachment_button, command=self.browse_for_attachment, borderwidth=0, bg=dark_background)
         self.browse_button.grid(row=5, column=1, sticky=E)
 
         self.send_image = PhotoImage(file="Images/send.png").subsample(10)  # Resized image
-        self.send_button = Button(root, image=self.send_image, command=self.send_facebook_message_with_attachment, borderwidth=0)
+        self.send_button = Button(root, image=self.send_image, command=self.send_facebook_message_with_attachment, borderwidth=0, bg=dark_background)
         self.send_button.grid(row=5, column=2, sticky=W)
 
-        # Make the application responsive
-        root.rowconfigure(6, weight=1)
-        root.columnconfigure(0, weight=1)
+        # Create a custom style for themed entry widgets
+        self.custom_style = ttk.Style()
+        self.custom_style.configure("Custom.TEntry", foreground=text_color, background=dark_background)
 
+        # Make the application responsive
+        for i in range(6):
+            root.rowconfigure(i, weight=1)
+        for i in range(3):
+            root.columnconfigure(i, weight=1)
+
+        # Set the initial window size
+        root.geometry("600x400")
     def browse_for_attachment(self):
         file_path = filedialog.askopenfilename()
         self.attachment_entry.delete(0, END)
