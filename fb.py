@@ -1,6 +1,6 @@
 import sys
 from tkinter import *
-from tkinter import ttk  # Import the ttk module for themed widgets
+from tkinter import ttk
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -69,6 +69,7 @@ class FacebookMessageSender:
 
         # Set the initial window size
         root.geometry("600x400")
+
     def browse_for_attachment(self):
         file_path = filedialog.askopenfilename()
         self.attachment_entry.delete(0, END)
@@ -102,7 +103,7 @@ class FacebookMessageSender:
                 return
 
             # Search for the recipient by name
-            search_box = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']")))
+            search_box = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']")))
             search_box.send_keys(recipient)
             search_box.send_keys(Keys.RETURN)
 
@@ -110,12 +111,15 @@ class FacebookMessageSender:
             self.handle_notifications(driver)
 
             # Click on the message button
-            message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[contains(@aria-label, 'Message')]")))
+            message_button = WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Message')]/parent::div")))
             message_button.click()
 
             # Enter the message
-            message_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[contenteditable='true']")))
-            message_input.send_keys(message_text)
+            message_input = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='textbox']")))
+
+            message_input.send_keys(Keys.CONTROL, 'a')  # Select all existing text in the textbox
+            message_input.send_keys(Keys.BACKSPACE)  # Delete the selected text
+            message_input.send_keys(message_text.strip())  # Enter the new message
 
             # Attach a file if specified
             if attachment_path:
