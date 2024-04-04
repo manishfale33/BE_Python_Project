@@ -1,12 +1,12 @@
-import sys
+import time
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from tkinter import filedialog
+from selenium.webdriver.chrome.options import Options
 
 class FacebookMessageSender:
     def __init__(self, root):
@@ -54,7 +54,7 @@ class FacebookMessageSender:
         self.browse_button.grid(row=5, column=1, sticky=E)
 
         self.send_image = PhotoImage(file="Images/send.png").subsample(10)  # Resized image
-        self.send_button = Button(root, image=self.send_image, command=self.send_facebook_message_with_attachment, borderwidth=0, bg=dark_background)
+        self.send_button = Button(root, image=self.send_image, command=self.send_message_or_friend_request, borderwidth=0, bg=dark_background)
         self.send_button.grid(row=5, column=2, sticky=W)
 
         # Create a custom style for themed entry widgets
@@ -75,14 +75,17 @@ class FacebookMessageSender:
         self.attachment_entry.delete(0, END)
         self.attachment_entry.insert(0, file_path)
 
-    def send_facebook_message_with_attachment(self):
+    def send_message_or_friend_request(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         recipient = self.recipient_entry.get()
-        message_text = self.message_entry.get("1.0", END)
+        message_text = self.message_entry.get("1.0", END).strip()
         attachment_path = self.attachment_entry.get()
 
-        driver = webdriver.Chrome()
+        # Chrome WebDriver options with --disable-notifications argument
+        chrome_options = Options()
+        chrome_options.add_argument("--disable-notifications")
+        driver = webdriver.Chrome(options=chrome_options)
 
         try:
             driver.get("https://www.facebook.com")
@@ -105,37 +108,55 @@ class FacebookMessageSender:
             # Search for the recipient by name
             search_box = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']")))
             search_box.send_keys(recipient)
+            time.sleep(2)  # Adding a delay for search results to load
             search_box.send_keys(Keys.RETURN)
 
             # Handle site notifications (if they appear)
             self.handle_notifications(driver)
 
-            # Click on the message button
-            message_button = WebDriverWait(driver, 50).until(EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Message')]/parent::div")))
-            message_button.click()
-
-            # Enter the message
-            message_input = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='textbox']")))
-
-            message_input.send_keys(Keys.CONTROL, 'a')  # Select all existing text in the textbox
-            message_input.send_keys(Keys.BACKSPACE)  # Delete the selected text
-            message_input.send_keys(message_text.strip())  # Enter the new message
-
-            # Attach a file if specified
-            if attachment_path:
-                attachment_input = WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.XPATH, "//input[@type='file']")))
-                attachment_input.send_keys(attachment_path)
-
-            # Send the message
-            message_input.send_keys(Keys.RETURN)
-
-            print("Message sent successfully")
+            # Check if the recipient is a friend
+            try:
+                friend_button_xpath = "//div[@data-click='profile_icon']//span[text()='Friends']"
+                friend_button = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, friend_button_xpath)))
+                # If the recipient is already a friend, send a message
+                self.send_message(driver, message_text, attachment_path)
+            except:
+                # If the recipient is not a friend, send a friend request first
+                friend_request_button_xpath = "//button[text()='Add Friend']"
+                friend_request_button = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, friend_request_button_xpath)))
+                friend_request_button.click()
+                print("Friend request sent.")
 
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
         finally:
             driver.quit()
+
+    def send_message(self, driver, message_text, attachment_path):
+        try:
+            # Wait for the "Message" button to be clickable
+            message_button_xpath = "//a[contains(@href, 'messages')]"
+            message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, message_button_xpath)))
+            message_button.click()
+
+            # Enter the message
+            message_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[contenteditable='true']")))
+            message_input.send_keys(message_text)
+
+            # Attach a file if specified
+            if attachment_path:
+                attachment_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//input[@type='file']")))
+                attachment_input.send_keys(attachment_path)
+
+            # Send the message
+            send_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Send']")))
+            send_button.click()
+
+            print("Message sent successfully")
+
+        except Exception as e:
+            print(f"An error occurred while sending the message: {str(e)}")
 
     def handle_notifications(self, driver):
         try:
@@ -148,10 +169,7 @@ class FacebookMessageSender:
             block_button.click()
             
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
-
-        finally:
-            driver.quit()
+            print(f"An error occurred while handling notifications: {str(e)}")
 
 if __name__ == "__main__":
     root = Tk()

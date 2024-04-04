@@ -3,6 +3,8 @@ from tkinter import ttk
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def send_email():
     sender_email = sender_email_entry.get()
@@ -18,34 +20,47 @@ def send_email():
         # Open Gmail login page
         driver.get("https://mail.google.com")
 
-        # Find and interact with the email and password fields
-        email_field = driver.find_element(By.ID, "identifierId")
+        # Wait for the login form to load
+        email_field = WebDriverWait(driver, 50).until(
+            EC.presence_of_element_located((By.ID, "identifierId"))
+        )
         email_field.send_keys(sender_email)
         email_field.send_keys(Keys.RETURN)
 
         # Wait for the password field to appear
-        driver.implicitly_wait(10)
-        password_field = driver.find_element(By.NAME, "password")
+        password_field = WebDriverWait(driver, 50).until(
+            EC.presence_of_element_located((By.NAME, "password"))
+        )
         password_field.send_keys(sender_password)
         password_field.send_keys(Keys.RETURN)
 
         # Compose an email
-        compose_button = driver.find_element(By.CSS_SELECTOR, "div[role='button'][gh='cm']")
+        compose_button = WebDriverWait(driver, 50).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='button'][gh='cm']"))
+        )
         compose_button.click()
-        driver.implicitly_wait(5)
 
-        to_field = driver.find_element_by_name("to")
+        # Wait for the email composition form to load
+        to_field = WebDriverWait(driver, 60).until(
+            EC.presence_of_element_located((By.NAME, "to"))
+        )
         to_field.send_keys(", ".join(recipients))
         to_field.send_keys(Keys.RETURN)
 
-        subject_field = driver.find_element(By.NAME, "subjectbox")
+        subject_field = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.NAME, "subjectbox"))
+        )
         subject_field.send_keys(subject)
 
-        message_field = driver.find_element(By.CSS_SELECTOR, "div[role='textbox']")
+        message_field = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='textbox']"))
+        )
         message_field.send_keys(message_text)
 
         # Send the email
-        send_button = driver.find_element(By.CSS_SELECTOR, "div[aria-label='Send ‪(Ctrl-Enter)‬']")
+        send_button = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[aria-label='Send ‪(Ctrl-Enter)‬']"))
+        )
         send_button.click()
 
         print("Email sent successfully")
