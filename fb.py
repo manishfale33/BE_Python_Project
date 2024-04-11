@@ -21,6 +21,7 @@ class FacebookMessageSender:
         dark_background = "#000000"
         text_color = "#00A0E6"
 
+        # Create labels and entry fields for username, password, recipient, message, and attachment
         self.username_label = Label(root, text="Facebook Email/Phone:", fg=text_color, bg=dark_background)
         self.username_label.grid(row=0, column=0, sticky=W)
         self.username_entry = ttk.Entry(root, style="Custom.TEntry")  # Use themed entry widget
@@ -49,12 +50,14 @@ class FacebookMessageSender:
         self.attach_label = Label(root, text="Attachment:", fg=text_color, bg=dark_background)
         self.attach_label.grid(row=5, column=0, sticky=W)
 
+        # Create browse button for attachment
         self.attachment_button = PhotoImage(file="Images/search.png").subsample(10)  # Resized image
         self.browse_button = Button(root, image=self.attachment_button, command=self.browse_for_attachment, borderwidth=0, bg=dark_background)
         self.browse_button.grid(row=5, column=1, sticky=E)
 
+        # Create send button for sending message or friend request
         self.send_image = PhotoImage(file="Images/send.png").subsample(10)  # Resized image
-        self.send_button = Button(root, image=self.send_image, command=self.send_message_or_friend_request, borderwidth=0, bg=dark_background)
+        self.send_button = Button(root, image=self.send_image, command=self.send_message, borderwidth=0, bg=dark_background)
         self.send_button.grid(row=5, column=2, sticky=W)
 
         # Create a custom style for themed entry widgets
@@ -71,11 +74,13 @@ class FacebookMessageSender:
         root.geometry("600x400")
 
     def browse_for_attachment(self):
+        # Function to browse and select a file for attachment
         file_path = filedialog.askopenfilename()
         self.attachment_entry.delete(0, END)
         self.attachment_entry.insert(0, file_path)
 
-    def send_message_or_friend_request(self):
+    def send_message(self):
+        # Function to send a message on Facebook
         username = self.username_entry.get()
         password = self.password_entry.get()
         recipient = self.recipient_entry.get()
@@ -114,31 +119,29 @@ class FacebookMessageSender:
             # Handle site notifications (if they appear)
             self.handle_notifications(driver)
 
-            # Check if the recipient is a friend
-            try:
-                friend_button_xpath = "//div[@data-click='profile_icon']//span[text()='Friends']"
-                friend_button = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, friend_button_xpath)))
-                # If the recipient is already a friend, send a message
-                self.send_message(driver, message_text, attachment_path)
-            except:
-                # If the recipient is not a friend, send a friend request first
-                friend_request_button_xpath = "//button[text()='Add Friend']"
-                friend_request_button = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, friend_request_button_xpath)))
-                friend_request_button.click()
-                print("Friend request sent.")
+            # Click on the profile icon of the searched person
+            profile_icon_xpath = "//body[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/h2[1]/span[1]/span[1]/span[1]/a[1]/span[1]"
+            profile_icon = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, profile_icon_xpath)))
+            profile_icon.click()
 
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
-
-        finally:
-            driver.quit()
-
-    def send_message(self, driver, message_text, attachment_path):
-        try:
-            # Wait for the "Message" button to be clickable
-            message_button_xpath = "//a[contains(@href, 'messages')]"
-            message_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, message_button_xpath)))
+            # Click the message button
+            message_button_xpath = "//span[contains(text(),'Message')]"
+            message_button = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, message_button_xpath)))
             message_button.click()
+
+            # Wait for the chat box to load
+            chat_box_xpath="//body/div[@id='mount_0_0_rP']/div[1]/div[1]/div[1]/div[5]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[4]/div[2]/div[1]"
+            chat_box = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, chat_box_xpath)))
+
+            # Enter the recipient's name
+            chat_box.send_keys(Keys.CONTROL + "a")  # Select all text in the input box
+            chat_box.send_keys(recipient)
+            time.sleep(2)  # Wait for the search results to load
+
+            # Select the recipient from the search results
+            recipient_xpath = f"//span[text()='{recipient}']/ancestor::div[@role='option']"
+            recipient_element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, recipient_xpath)))
+            recipient_element.click()
 
             # Enter the message
             message_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[contenteditable='true']")))
@@ -150,15 +153,20 @@ class FacebookMessageSender:
                 attachment_input.send_keys(attachment_path)
 
             # Send the message
-            send_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Send']")))
+            send_button_xpath = "//button[contains(text(), 'Send')]"
+            send_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, send_button_xpath)))
             send_button.click()
 
             print("Message sent successfully")
 
         except Exception as e:
-            print(f"An error occurred while sending the message: {str(e)}")
+            print(f"An error occurred: {str(e)}")
+
+        finally:
+            driver.quit()
 
     def handle_notifications(self, driver):
+        # Function to handle site notifications
         try:
             # Wait for the notification dialog to appear
             notification_dialog = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
@@ -172,6 +180,9 @@ class FacebookMessageSender:
             print(f"An error occurred while handling notifications: {str(e)}")
 
 if __name__ == "__main__":
+    # Create the Tkinter application window
     root = Tk()
+
+    # Instantiate the FacebookMessageSender class and run the application
     app = FacebookMessageSender(root)
     root.mainloop()
