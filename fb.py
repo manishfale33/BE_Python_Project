@@ -156,6 +156,9 @@ class FacebookMessageSender:
             send_button = WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, "//body[1]/div[1]/div[1]/div[1]/div[1]/div[5]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[2]/div[1]/div[1]/span[2]/div[1]")))
             send_button.click()
             print("Message sent successfully")
+            # Wait for some time before closing the application window
+            time.sleep(10)  # Wait for 10 seconds
+
 
         except Exception as e:
             print(f"An error occurred: {str(e)}")
