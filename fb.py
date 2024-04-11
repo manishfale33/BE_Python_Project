@@ -130,7 +130,7 @@ class FacebookMessageSender:
 
             # Click on the profile icon of the searched person
             profile_icon_xpath = "//body[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/h2[1]/span[1]/span[1]/span[1]/a[1]/span[1]"
-            profile_icon = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, profile_icon_xpath)))
+            profile_icon = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, profile_icon_xpath)))
             profile_icon.click()
 
 # Click the message button
