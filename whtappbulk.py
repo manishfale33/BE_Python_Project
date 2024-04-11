@@ -15,6 +15,7 @@ def send_message(driver, phone_number, message):
     
     driver.get(f"https://web.whatsapp.com/send?phone={phone_number}")
     message_box = driver.find_element_by_xpath('//div[@contenteditable="true"][@data-tab="1"]')
+
     message_box.send_keys(message)
     message_box.send_keys(Keys.ENTER)
 
