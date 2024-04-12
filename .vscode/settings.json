@@ -7,5 +7,8 @@
         "*test.py"
     ],
     "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": true,
+    "Codegeex.Chat.LanguagePreference": "English",
+    "Codegeex.Comment.LanguagePreference": "English",
+    "Codegeex.SidebarUI.LanguagePreference": "English"
 }
